@@ -146,26 +146,47 @@ class RepoViewModel(
             _selectedRepository.value = repository
             _repoDetailsState.value = ApiResult.Loading
 
-            when (val result = getRepositoryUseCase(repository.owner, repository.name)) {
-                is ApiResult.Success -> {
-                    val repoWithDetails = result.data
-                    when (val readmeResult = getReadmeUseCase(repository.owner, repository.name)) {
-                        is ApiResult.Success -> {
-                            _selectedRepository.value = repoWithDetails.copy(readme = readmeResult.data)
-                            _repoDetailsState.value = ApiResult.Success(Unit)
+            val favoriteRepo = favoriteDao.getById(repository.id)
+
+            if (favoriteRepo != null) {
+                val repoFromFavorites = Repository(
+                    id = favoriteRepo.id,
+                    name = favoriteRepo.name,
+                    owner = favoriteRepo.owner,
+                    description = favoriteRepo.description,
+                    stars = favoriteRepo.stars,
+                    forks = favoriteRepo.forks,
+                    language = favoriteRepo.language,
+                    updatedAt = favoriteRepo.updatedAt,
+                    license = null, // эти поля не сохраняем
+                    topics = emptyList(),
+                    readme = "Данные из избранного (оффлайн режим)"
+                )
+                _selectedRepository.value = repoFromFavorites
+                _repoDetailsState.value = ApiResult.Success(Unit)
+            } else {
+
+                when (val result = getRepositoryUseCase(repository.owner, repository.name)) {
+                    is ApiResult.Success -> {
+                        val repoWithDetails = result.data
+                        when (val readmeResult = getReadmeUseCase(repository.owner, repository.name)) {
+                            is ApiResult.Success -> {
+                                _selectedRepository.value = repoWithDetails.copy(readme = readmeResult.data)
+                                _repoDetailsState.value = ApiResult.Success(Unit)
+                            }
+                            is ApiResult.Error -> {
+                                _selectedRepository.value = repoWithDetails.copy(readme = "Не удалось загрузить README: ${readmeResult.message}")
+                                _repoDetailsState.value = ApiResult.Success(Unit)
+                            }
+                            ApiResult.Loading -> {}
                         }
-                        is ApiResult.Error -> {
-                            _selectedRepository.value = repoWithDetails.copy(readme = "Не удалось загрузить README: ${readmeResult.message}")
-                            _repoDetailsState.value = ApiResult.Success(Unit)
-                        }
-                        ApiResult.Loading -> {}
                     }
-                }
-                is ApiResult.Error -> {
-                    _repoDetailsState.value = ApiResult.Error(result.message)
-                }
-                ApiResult.Loading -> {
-                    _repoDetailsState.value = ApiResult.Loading
+                    is ApiResult.Error -> {
+                        _repoDetailsState.value = ApiResult.Error(result.message)
+                    }
+                    ApiResult.Loading -> {
+                        _repoDetailsState.value = ApiResult.Loading
+                    }
                 }
             }
         }

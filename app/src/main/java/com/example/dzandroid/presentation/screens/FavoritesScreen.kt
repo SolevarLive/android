@@ -1,6 +1,7 @@
 package com.example.dzandroid.presentation.screens
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -51,7 +52,10 @@ fun FavoritesScreen(
                                 stars = favorite.stars,
                                 forks = favorite.forks,
                                 language = favorite.language,
-                                updatedAt = favorite.updatedAt
+                                updatedAt = favorite.updatedAt,
+                                license = null,
+                                topics = emptyList(),
+                                readme = ""
                             )
                             onRepoClick(repo)
                         }
@@ -66,7 +70,7 @@ fun FavoritesScreen(
                         Text(favorite.description, style = MaterialTheme.typography.bodyMedium)
                         Spacer(modifier = Modifier.height(12.dp))
                         Row(
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth()
                         ) {
