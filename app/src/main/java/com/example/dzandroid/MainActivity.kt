@@ -6,8 +6,11 @@ import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.navigation.compose.rememberNavController
+import com.example.dzandroid.data.local.database.AppDatabase
+import com.example.dzandroid.data.local.datastore.SharedPrefsManager
 import com.example.dzandroid.data.remote.api.GithubApi
 import com.example.dzandroid.data.repository.GithubRepositoryImpl
+import com.example.dzandroid.di.FilterBadgeCache
 import com.example.dzandroid.domain.GetReadmeUseCase
 import com.example.dzandroid.domain.GetRepositoryUseCase
 import com.example.dzandroid.domain.SearchRepositoriesUseCase
@@ -18,8 +21,15 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val database = AppDatabase.getInstance(this)
+
+        val sharedPrefsManager = SharedPrefsManager(this)
+
+        val filterBadgeCache = FilterBadgeCache()
 
         val retrofit = Retrofit.Builder()
             .baseUrl("https://api.github.com/")
@@ -31,7 +41,15 @@ class MainActivity : ComponentActivity() {
         val searchUseCase = SearchRepositoriesUseCase(repository)
         val getRepoUseCase = GetRepositoryUseCase(repository)
         val getReadmeUseCase = GetReadmeUseCase(repository)
-        val viewModel = RepoViewModel(searchUseCase, getRepoUseCase, getReadmeUseCase)
+
+        val viewModel = RepoViewModel(
+            searchRepositoriesUseCase = searchUseCase,
+            getRepositoryUseCase = getRepoUseCase,
+            getReadmeUseCase = getReadmeUseCase,
+            sharedPrefsManager = sharedPrefsManager,
+            favoriteDao = database.favoriteDao(),
+            filterBadgeCache = filterBadgeCache
+        )
 
         setContent {
             GithubReposTheme {
@@ -42,7 +60,8 @@ class MainActivity : ComponentActivity() {
 
                     MainApp(
                         navController = navController,
-                        viewModel = viewModel
+                        viewModel = viewModel,
+                        filterBadgeCache = filterBadgeCache
                     )
                 }
             }

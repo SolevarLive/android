@@ -10,15 +10,16 @@ import androidx.compose.runtime.setValue
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.dzandroid.di.FilterBadgeCache
 import com.example.dzandroid.presentation.screens.MainScreen
 import com.example.dzandroid.presentation.screens.RepoDetailsScreen
 import com.example.dzandroid.presentation.RepoViewModel
 
-
 @Composable
 fun MainApp(
     navController: NavHostController,
-    viewModel: RepoViewModel
+    viewModel: RepoViewModel,
+    filterBadgeCache: FilterBadgeCache
 ) {
     var selectedTab by remember { mutableStateOf(0) }
 
@@ -36,7 +37,8 @@ fun MainApp(
                 selectedTab = selectedTab,
                 onTabSelected = { tabIndex ->
                     selectedTab = tabIndex
-                }
+                },
+                filterBadgeCache = filterBadgeCache
             )
         }
 
