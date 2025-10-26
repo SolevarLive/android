@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -29,7 +30,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
+import com.example.dzandroid.data.remote.result.ApiResult
 import com.example.dzandroid.presentation.RepoViewModel
+import com.example.dzandroid.presentation.components.LoadingState
 
 /**
  * Экран с детальной информацией о выбранном репозитории
@@ -42,16 +45,7 @@ fun RepoDetailsScreen(
     onBackClick: () -> Unit
 ) {
     val selectedRepo = viewModel.selectedRepository.collectAsState().value
-
-    if (selectedRepo == null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("Репозиторий не найден")
-        }
-        return
-    }
+    val detailsState = viewModel.repoDetailsState.collectAsState().value
 
     Scaffold(
         topBar = {
@@ -75,150 +69,162 @@ fun RepoDetailsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            if (selectedRepo != null) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = "${selectedRepo.owner}/${selectedRepo.name}",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = selectedRepo.description,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Card(
-                        modifier = Modifier.fillMaxWidth()
+            LoadingState(
+                state = detailsState,
+                onRetry = { viewModel.retryLoadingDetails() }
+            ) {
+                if (selectedRepo != null) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(16.dp)
                     ) {
-                        ConstraintLayout(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
+                        Text(
+                            text = "${selectedRepo.owner}/${selectedRepo.name}",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = selectedRepo.description,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Card(
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            val (stars, forks, language, license) = createRefs()
-
-                            Column(
-                                modifier = Modifier.constrainAs(stars) {
-                                    top.linkTo(parent.top)
-                                    start.linkTo(parent.start)
-                                },
-                                horizontalAlignment = Alignment.CenterHorizontally
+                            ConstraintLayout(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
                             ) {
-                                Text(
-                                    text = selectedRepo.stars.toString(),
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text("Звёзды", fontSize = 12.sp)
-                            }
+                                val (stars, forks, language, license) = createRefs()
 
-                            Column(
-                                modifier = Modifier.constrainAs(forks) {
-                                    top.linkTo(stars.top)
-                                    start.linkTo(stars.end, margin = 32.dp)
-                                },
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = selectedRepo.forks.toString(),
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text("Форки", fontSize = 12.sp)
-                            }
+                                Column(
+                                    modifier = Modifier.constrainAs(stars) {
+                                        top.linkTo(parent.top)
+                                        start.linkTo(parent.start)
+                                    },
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = selectedRepo.stars.toString(),
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text("Звёзды", fontSize = 12.sp)
+                                }
 
-                            Column(
-                                modifier = Modifier.constrainAs(language) {
-                                    top.linkTo(parent.top)
-                                    end.linkTo(parent.end)
-                                },
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = selectedRepo.language,
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text("Язык", fontSize = 12.sp)
-                            }
+                                Column(
+                                    modifier = Modifier.constrainAs(forks) {
+                                        top.linkTo(stars.top)
+                                        start.linkTo(stars.end, margin = 32.dp)
+                                    },
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = selectedRepo.forks.toString(),
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text("Форки", fontSize = 12.sp)
+                                }
 
-                            Column(
-                                modifier = Modifier.constrainAs(license) {
-                                    top.linkTo(language.bottom, margin = 16.dp)
-                                    end.linkTo(parent.end)
-                                },
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = selectedRepo.license ?: "Без лицензии",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text("Лицензия", fontSize = 12.sp)
+                                Column(
+                                    modifier = Modifier.constrainAs(language) {
+                                        top.linkTo(parent.top)
+                                        end.linkTo(parent.end)
+                                    },
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = selectedRepo.language,
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text("Язык", fontSize = 12.sp)
+                                }
+
+                                Column(
+                                    modifier = Modifier.constrainAs(license) {
+                                        top.linkTo(language.bottom, margin = 16.dp)
+                                        end.linkTo(parent.end)
+                                    },
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = selectedRepo.license ?: "Без лицензии",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text("Лицензия", fontSize = 12.sp)
+                                }
                             }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
 
-                    Card(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp)
+                        Card(
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(
-                                text = "Информация о репозитории",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            InfoRow("Владелец", selectedRepo.owner)
-                            InfoRow("Последнее обновление", selectedRepo.updatedAt)
-
-                            if (selectedRepo.topics.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(8.dp))
+                            Column(
+                                modifier = Modifier.padding(16.dp)
+                            ) {
                                 Text(
-                                    text = "Темы: ${selectedRepo.topics.joinToString(", ")}",
+                                    text = "Информация о репозитории",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                InfoRow("Владелец", selectedRepo.owner)
+                                InfoRow("Последнее обновление", selectedRepo.updatedAt)
+
+                                if (selectedRepo.topics.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Темы: ${selectedRepo.topics.joinToString(", ")}",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Card(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp)
+                            ) {
+                                Text(
+                                    text = "README",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Text(
+                                    text = selectedRepo.readme,
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Card(
-                        modifier = Modifier.fillMaxWidth()
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp)
-                        ) {
-                            Text(
-                                text = "README",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            Text(
-                                text = selectedRepo.readme,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
+                        Text("Репозиторий не найден")
                     }
                 }
             }
