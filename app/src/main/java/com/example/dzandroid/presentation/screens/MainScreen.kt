@@ -10,9 +10,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -23,9 +24,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.dzandroid.data.models.Repository
-import com.example.dzandroid.presentation.RepoViewModel
+import com.example.dzandroid.di.FilterBadgeCache
 import com.example.dzandroid.presentation.components.LoadingState
 import com.example.dzandroid.presentation.components.RepoListItem
+import com.example.dzandroid.presentation.RepoViewModel
 
 /**
  * Главный экран приложения с BottomNavigation
@@ -36,10 +38,12 @@ fun MainScreen(
     viewModel: RepoViewModel,
     onRepoClick: (Repository) -> Unit,
     selectedTab: Int,
-    onTabSelected: (Int) -> Unit
+    onTabSelected: (Int) -> Unit,
+    filterBadgeCache: FilterBadgeCache
 ) {
     val repositories = viewModel.repositories.collectAsState().value
     val loadingState = viewModel.loadingState.collectAsState().value
+    val favorites = viewModel.favorites.collectAsState().value
 
     val content: @Composable (PaddingValues) -> Unit = { paddingValues ->
         when (selectedTab) {
@@ -59,7 +63,8 @@ fun MainScreen(
                             items(repositories) { repo ->
                                 RepoListItem(
                                     repository = repo,
-                                    onClick = { onRepoClick(repo) }
+                                    onClick = { onRepoClick(repo) },
+                                    viewModel = viewModel
                                 )
                             }
                         }
@@ -72,7 +77,10 @@ fun MainScreen(
                         .fillMaxSize()
                         .padding(paddingValues)
                 ) {
-                    ProfileContent()
+                    FavoritesScreen(
+                        favorites = favorites,
+                        onRepoClick = onRepoClick
+                    )
                 }
             }
             2 -> {
@@ -81,30 +89,7 @@ fun MainScreen(
                         .fillMaxSize()
                         .padding(paddingValues)
                 ) {
-                    SettingsContent()
-                }
-            }
-            else -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                ) {
-                    LoadingState(
-                        state = loadingState,
-                        onRetry = { viewModel.retryLoading() }
-                    ) {
-                        LazyColumn(
-                            contentPadding = PaddingValues(16.dp)
-                        ) {
-                            items(repositories) { repo ->
-                                RepoListItem(
-                                    repository = repo,
-                                    onClick = { onRepoClick(repo) }
-                                )
-                            }
-                        }
-                    }
+                    SettingsContent(viewModel = viewModel)
                 }
             }
         }
@@ -117,7 +102,7 @@ fun MainScreen(
                     Text(
                         when (selectedTab) {
                             0 -> "Репозитории GitHub"
-                            1 -> "Профиль"
+                            1 -> "Избранное"
                             2 -> "Настройки"
                             else -> "Репозитории GitHub"
                         }
@@ -134,13 +119,23 @@ fun MainScreen(
                     onClick = { onTabSelected(0) }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Person, contentDescription = "Профиль") },
-                    label = { Text("Профиль") },
+                    icon = { Icon(Icons.Default.Person, contentDescription = "Избранное") },
+                    label = { Text("Избранное") },
                     selected = selectedTab == 1,
                     onClick = { onTabSelected(1) }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Settings, contentDescription = "Настройки") },
+                    icon = {
+                        BadgedBox(
+                            badge = {
+                                if (filterBadgeCache.showBadge) {
+                                    Badge()
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Default.Settings, contentDescription = "Настройки")
+                        }
+                    },
                     label = { Text("Настройки") },
                     selected = selectedTab == 2,
                     onClick = { onTabSelected(2) }
@@ -149,36 +144,4 @@ fun MainScreen(
         },
         content = content
     )
-}
-
-/**
- * Контент для экрана профиля
- */
-@Composable
-private fun ProfileContent() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = androidx.compose.ui.Alignment.Center
-    ) {
-        Text(
-            text = "Экран профиля",
-            style = MaterialTheme.typography.headlineMedium
-        )
-    }
-}
-
-/**
- * Контент для экрана настроек
- */
-@Composable
-private fun SettingsContent() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = androidx.compose.ui.Alignment.Center
-    ) {
-        Text(
-            text = "Экран настроек",
-            style = MaterialTheme.typography.headlineMedium
-        )
-    }
 }
