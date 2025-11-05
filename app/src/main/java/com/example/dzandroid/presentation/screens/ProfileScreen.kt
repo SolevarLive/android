@@ -2,6 +2,7 @@ package com.example.dzandroid.presentation.screens
 
 import android.app.DownloadManager
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -125,10 +126,9 @@ fun ProfileScreen(
                     Text(
                         text = profile.fullName.ifEmpty { "Не указано" },
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(bottom = 16.dp)
                     )
-
-                    Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
                         text = "Должность",
@@ -138,10 +138,9 @@ fun ProfileScreen(
                     Text(
                         text = profile.position.ifEmpty { "Не указана" },
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(bottom = 16.dp)
                     )
-
-                    Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
                         text = "Email",
@@ -151,10 +150,9 @@ fun ProfileScreen(
                     Text(
                         text = profile.email.ifEmpty { "Не указан" },
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(bottom = 24.dp)
                     )
-
-                    Spacer(modifier = Modifier.height(24.dp))
 
                     if (profile.resumeUrl.isNotEmpty()) {
                         Column {
@@ -164,9 +162,10 @@ fun ProfileScreen(
                                 },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text("Скачать резюме")
+                                Text("Скачать резюме (PDF)")
                             }
 
+                            Spacer(modifier = Modifier.height(8.dp))
 
                             TextButton(
                                 onClick = {
@@ -176,6 +175,18 @@ fun ProfileScreen(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text("Открыть папку загрузок")
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            TextButton(
+                                onClick = {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(profile.resumeUrl))
+                                    context.startActivity(intent)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Открыть резюме в браузере")
                             }
                         }
                     } else {
@@ -187,6 +198,8 @@ fun ProfileScreen(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

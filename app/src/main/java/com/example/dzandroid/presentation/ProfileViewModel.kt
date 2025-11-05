@@ -82,7 +82,7 @@ class ProfileViewModel(
                 val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
 
                 val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-                val fileName = "resume_$timestamp.pdf"
+                val fileName = "resume_${_profileState.value.fullName}_$timestamp.pdf"
 
                 val request = DownloadManager.Request(Uri.parse(url))
                     .setTitle("Резюме - ${_profileState.value.fullName}")
@@ -92,13 +92,8 @@ class ProfileViewModel(
                     .setAllowedOverMetered(true)
                     .setAllowedOverRoaming(true)
 
-                val downloadId = downloadManager.enqueue(request)
-                _downloadStatus.value = "Резюме скачивается..."
-
-                launch {
-                    kotlinx.coroutines.delay(3000)
-                    _downloadStatus.value = null
-                }
+                downloadManager.enqueue(request)
+                _downloadStatus.value = "Резюме скачивается в папку Загрузки"
 
             } catch (e: Exception) {
                 _downloadStatus.value = "Ошибка скачивания: ${e.message}"
