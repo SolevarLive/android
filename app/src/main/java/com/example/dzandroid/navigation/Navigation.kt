@@ -7,4 +7,6 @@ package com.example.dzandroid.navigation
 sealed class Screen(val route: String) {
     object Main : Screen("main")
     object RepoDetails : Screen("repo_details")
+    object Profile : Screen("profile")
+    object EditProfile : Screen("edit_profile")
 }

@@ -7,9 +7,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,11 +24,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.dzandroid.data.models.Repository
 import com.example.dzandroid.di.FilterBadgeCache
+import com.example.dzandroid.navigation.Screen
+import com.example.dzandroid.presentation.ProfileViewModel
+import com.example.dzandroid.presentation.RepoViewModel
 import com.example.dzandroid.presentation.components.LoadingState
 import com.example.dzandroid.presentation.components.RepoListItem
-import com.example.dzandroid.presentation.RepoViewModel
 
 /**
  * Главный экран приложения с BottomNavigation
@@ -36,6 +40,8 @@ import com.example.dzandroid.presentation.RepoViewModel
 @Composable
 fun MainScreen(
     viewModel: RepoViewModel,
+    profileViewModel: ProfileViewModel,
+    navController: NavController,
     onRepoClick: (Repository) -> Unit,
     selectedTab: Int,
     onTabSelected: (Int) -> Unit,
@@ -89,6 +95,21 @@ fun MainScreen(
                         .fillMaxSize()
                         .padding(paddingValues)
                 ) {
+                    ProfileScreen(
+                        viewModel = profileViewModel,
+                        navController = navController,
+                        onEditClick = {
+                            navController.navigate(Screen.EditProfile.route)
+                        }
+                    )
+                }
+            }
+            3 -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                ) {
                     SettingsContent(viewModel = viewModel)
                 }
             }
@@ -103,7 +124,8 @@ fun MainScreen(
                         when (selectedTab) {
                             0 -> "Репозитории GitHub"
                             1 -> "Избранное"
-                            2 -> "Настройки"
+                            2 -> "Профиль"
+                            3 -> "Фильтры"
                             else -> "Репозитории GitHub"
                         }
                     )
@@ -113,16 +135,22 @@ fun MainScreen(
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Info, contentDescription = "Репозитории") },
+                    icon = { Icon(Icons.Default.Home, contentDescription = "Репозитории") },
                     label = { Text("Репозитории") },
                     selected = selectedTab == 0,
                     onClick = { onTabSelected(0) }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Person, contentDescription = "Избранное") },
+                    icon = { Icon(Icons.Default.Favorite, contentDescription = "Избранное") },
                     label = { Text("Избранное") },
                     selected = selectedTab == 1,
                     onClick = { onTabSelected(1) }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.Person, contentDescription = "Профиль") },
+                    label = { Text("Профиль") },
+                    selected = selectedTab == 2,
+                    onClick = { onTabSelected(2) }
                 )
                 NavigationBarItem(
                     icon = {
@@ -133,12 +161,12 @@ fun MainScreen(
                                 }
                             }
                         ) {
-                            Icon(Icons.Default.Settings, contentDescription = "Настройки")
+                            Icon(Icons.Default.FilterList, contentDescription = "Фильтры")
                         }
                     },
-                    label = { Text("Настройки") },
-                    selected = selectedTab == 2,
-                    onClick = { onTabSelected(2) }
+                    label = { Text("Фильтры") },
+                    selected = selectedTab == 3,
+                    onClick = { onTabSelected(3) }
                 )
             }
         },
