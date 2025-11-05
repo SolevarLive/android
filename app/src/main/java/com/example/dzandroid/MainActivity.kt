@@ -7,16 +7,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.navigation.compose.rememberNavController
 import com.example.dzandroid.data.local.database.AppDatabase
+import com.example.dzandroid.data.local.datastore.ProfileDataStore
 import com.example.dzandroid.data.local.datastore.SharedPrefsManager
 import com.example.dzandroid.data.remote.api.GithubApi
 import com.example.dzandroid.data.repository.GithubRepositoryImpl
 import com.example.dzandroid.di.FilterBadgeCache
+import com.example.dzandroid.domain.GetProfileUseCase
 import com.example.dzandroid.domain.GetReadmeUseCase
 import com.example.dzandroid.domain.GetRepositoryUseCase
+import com.example.dzandroid.domain.SaveProfileUseCase
 import com.example.dzandroid.domain.SearchRepositoriesUseCase
 import com.example.dzandroid.navigation.MainApp
+import com.example.dzandroid.presentation.ProfileViewModel
 import com.example.dzandroid.presentation.RepoViewModel
-import com.example.dzandroid.ui.theme.GithubReposTheme
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -26,9 +29,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val database = AppDatabase.getInstance(this)
-
         val sharedPrefsManager = SharedPrefsManager(this)
-
         val filterBadgeCache = FilterBadgeCache()
 
         val retrofit = Retrofit.Builder()
@@ -51,8 +52,16 @@ class MainActivity : ComponentActivity() {
             filterBadgeCache = filterBadgeCache
         )
 
+        val profileDataStore = ProfileDataStore(this)
+        val getProfileUseCase = GetProfileUseCase(profileDataStore)
+        val saveProfileUseCase = SaveProfileUseCase(profileDataStore)
+        val profileViewModel = ProfileViewModel(
+            getProfileUseCase = getProfileUseCase,
+            saveProfileUseCase = saveProfileUseCase
+        )
+
         setContent {
-            GithubReposTheme {
+            MaterialTheme {
                 Surface(
                     color = MaterialTheme.colorScheme.background
                 ) {
@@ -61,6 +70,7 @@ class MainActivity : ComponentActivity() {
                     MainApp(
                         navController = navController,
                         viewModel = viewModel,
+                        profileViewModel = profileViewModel,
                         filterBadgeCache = filterBadgeCache
                     )
                 }
