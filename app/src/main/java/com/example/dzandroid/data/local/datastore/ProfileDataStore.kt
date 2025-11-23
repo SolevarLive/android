@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.map
 
 private val Context.profileDataStore: DataStore<Preferences> by preferencesDataStore(name = "profile")
 
-class ProfileDataStore(private val context: Context) {
+class ProfileDataStore(val context: Context) {
 
     companion object {
         private val PROFILE_KEY = stringPreferencesKey("profile_data")
@@ -21,20 +21,21 @@ class ProfileDataStore(private val context: Context) {
 
     private val gson = Gson()
 
-    val profileFlow: Flow<Profile> = context.profileDataStore.data
-        .map { preferences ->
-            val profileJson = preferences[PROFILE_KEY]
-            if (profileJson != null) {
-                gson.fromJson(profileJson, Profile::class.java)
-            } else {
-                Profile()
-            }
+    val profileFlow: Flow<Profile> = context.profileDataStore.data.map { preferences ->
+        val profileJson = preferences[PROFILE_KEY]
+        if (profileJson != null) {
+            gson.fromJson(profileJson, Profile::class.java)
+        } else {
+            Profile()
         }
+    }
 
     suspend fun saveProfile(profile: Profile) {
         context.profileDataStore.edit { preferences ->
             val profileJson = gson.toJson(profile)
             preferences[PROFILE_KEY] = profileJson
         }
+        val sharedPrefs = context.getSharedPreferences("profile", Context.MODE_PRIVATE)
+        sharedPrefs.edit().putString("profile_data", gson.toJson(profile)).apply()
     }
 }

@@ -1,9 +1,13 @@
 package com.example.dzandroid.presentation.screens
 
 import android.Manifest
+import android.app.Activity
+import android.app.TimePickerDialog
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,6 +21,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,7 +38,9 @@ import androidx.core.content.ContextCompat
 import coil.compose.rememberAsyncImagePainter
 import com.example.dzandroid.R
 import com.example.dzandroid.presentation.ProfileViewModel
+import com.example.dzandroid.presentation.receivers.ClassReminderReceiver
 import com.example.dzandroid.presentation.rememberImageService
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,32 +53,34 @@ fun EditProfileScreen(
 
     val profile by viewModel.profileState.collectAsState()
     val avatarUri by viewModel.avatarUri.collectAsState()
+    val savedTime by viewModel.favoriteClassTime.collectAsState()
 
     var fullName by remember { mutableStateOf(profile.fullName) }
     var resumeUrl by remember { mutableStateOf(profile.resumeUrl) }
     var position by remember { mutableStateOf(profile.position) }
     var email by remember { mutableStateOf(profile.email) }
+    var favoriteClassTimeInput by remember { mutableStateOf(savedTime) }
+    var isTimeError by remember { mutableStateOf(false) }
+
+    LaunchedEffect(favoriteClassTimeInput) {
+        isTimeError = favoriteClassTimeInput.isNotEmpty() && !viewModel.validateTimeFormat(favoriteClassTimeInput)
+    }
 
     var showImageSourceDialog by remember { mutableStateOf(false) }
     var showPermissionDeniedDialog by remember { mutableStateOf(false) }
-
     var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
 
     val pickMediaLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
-        uri?.let {
-            viewModel.updateAvatar(it)
-        }
+        uri?.let { viewModel.updateAvatar(it) }
     }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { success ->
         if (success) {
-            cameraImageUri?.let { uri ->
-                viewModel.updateAvatar(uri)
-            }
+            cameraImageUri?.let { uri -> viewModel.updateAvatar(uri) }
         }
         cameraImageUri = null
     }
@@ -79,22 +88,15 @@ fun EditProfileScreen(
     val android13PermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        if (isGranted) {
-            showImageSourceDialog = true
-        } else {
-            showPermissionDeniedDialog = true
-        }
+        if (isGranted) showImageSourceDialog = true
+        else showPermissionDeniedDialog = true
     }
 
     val legacyPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        val allGranted = permissions.values.all { it }
-        if (allGranted) {
-            showImageSourceDialog = true
-        } else {
-            showPermissionDeniedDialog = true
-        }
+        if (permissions.values.all { it }) showImageSourceDialog = true
+        else showPermissionDeniedDialog = true
     }
 
     fun checkPermissions() {
@@ -103,26 +105,14 @@ fun EditProfileScreen(
                 context,
                 Manifest.permission.READ_MEDIA_IMAGES
             ) == PackageManager.PERMISSION_GRANTED
-
-            if (hasMediaPermission) {
-                showImageSourceDialog = true
-            } else {
-                android13PermissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES)
-            }
+            if (hasMediaPermission) showImageSourceDialog = true
+            else android13PermissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES)
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val permissionsToCheck = arrayOf(
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.CAMERA
-            )
-
-            val hasAllPermissions = permissionsToCheck.all { permission ->
-                ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
-            }
-
-            if (hasAllPermissions) {
+            val perms = arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.CAMERA)
+            if (perms.all { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }) {
                 showImageSourceDialog = true
             } else {
-                legacyPermissionLauncher.launch(permissionsToCheck)
+                legacyPermissionLauncher.launch(perms)
             }
         } else {
             showImageSourceDialog = true
@@ -131,19 +121,53 @@ fun EditProfileScreen(
 
     fun openCamera() {
         try {
-            val cameraUri = imageService.getCameraUri()
-            if (cameraUri != null) {
-                cameraImageUri = cameraUri
-                cameraLauncher.launch(cameraUri)
+            val uri = imageService.getCameraUri()
+            if (uri != null) {
+                cameraImageUri = uri
+                cameraLauncher.launch(uri)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Toast.makeText(context, "Ошибка открытия камеры", Toast.LENGTH_SHORT).show()
         }
     }
 
     fun openGallery() {
         pickMediaLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
     }
+
+    fun openTimePicker() {
+        val activity = context as? Activity ?: return
+        val now = Calendar.getInstance()
+        TimePickerDialog(
+            activity,
+            { _, hour, minute ->
+                favoriteClassTimeInput = "%02d:%02d".format(hour, minute)
+            },
+            now[Calendar.HOUR_OF_DAY],
+            now[Calendar.MINUTE],
+            true
+        ).show()
+    }
+
+    fun saveAndExit() {
+        viewModel.saveProfile(
+            fullName = fullName,
+            resumeUrl = resumeUrl,
+            position = position,
+            email = email,
+            favoriteClassTime = favoriteClassTimeInput
+        )
+
+        if (viewModel.validateTimeFormat(favoriteClassTimeInput)) {
+            viewModel.setClassReminder(favoriteClassTimeInput)
+        } else {
+            viewModel.cancelClassReminder()
+        }
+
+        onBackClick()
+    }
+
+    val canSave = fullName.isNotBlank() && !isTimeError
 
     Scaffold(
         topBar = {
@@ -156,15 +180,8 @@ fun EditProfileScreen(
                 },
                 actions = {
                     IconButton(
-                        onClick = {
-                            viewModel.saveProfile(
-                                fullName = fullName,
-                                resumeUrl = resumeUrl,
-                                position = position,
-                                email = email
-                            )
-                            onBackClick()
-                        }
+                        enabled = canSave,
+                        onClick = { saveAndExit() }
                     ) {
                         Icon(Icons.Default.Done, contentDescription = "Готово")
                     }
@@ -184,56 +201,38 @@ fun EditProfileScreen(
             Box(
                 modifier = Modifier
                     .size(150.dp)
-                    .clickable {
-                        checkPermissions()
-                    }
+                    .clickable { checkPermissions() }
             ) {
-                if (avatarUri != null) {
-                    Image(
-                        painter = rememberAsyncImagePainter(model = avatarUri),
-                        contentDescription = "Аватар",
-                        modifier = Modifier
-                            .size(150.dp)
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_profile_placeholder),
-                        contentDescription = "Аватар по умолчанию",
-                        modifier = Modifier
-                            .size(150.dp)
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                }
+                val painter = avatarUri?.let { rememberAsyncImagePainter(it) }
+                    ?: painterResource(R.drawable.ic_profile_placeholder)
+
+                Image(
+                    painter = painter,
+                    contentDescription = "Аватар",
+                    modifier = Modifier.size(150.dp).clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
 
                 Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .clip(CircleShape)
+                    modifier = Modifier.matchParentSize().clip(CircleShape)
                 ) {
                     Text(
                         text = "Изменить фото",
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 8.dp),
+                        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(24.dp)
-                ) {
+                Column(Modifier.padding(24.dp)) {
                     OutlinedTextField(
                         value = fullName,
                         onValueChange = { fullName = it },
@@ -241,30 +240,23 @@ fun EditProfileScreen(
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
-
                     Spacer(modifier = Modifier.height(16.dp))
 
                     OutlinedTextField(
                         value = resumeUrl,
                         onValueChange = { resumeUrl = it },
-                        label = { Text("Ссылка на резюме/портфолио") },
+                        label = { Text("Ссылка на резюме") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions.Default.copy(
-                            keyboardType = KeyboardType.Uri
-                        )
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
                     )
-
                     Spacer(modifier = Modifier.height(16.dp))
 
                     OutlinedTextField(
                         value = position,
                         onValueChange = { position = it },
                         label = { Text("Должность") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        modifier = Modifier.fillMaxWidth()
                     )
-
                     Spacer(modifier = Modifier.height(16.dp))
 
                     OutlinedTextField(
@@ -272,75 +264,72 @@ fun EditProfileScreen(
                         onValueChange = { email = it },
                         label = { Text("Email") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions.Default.copy(
-                            keyboardType = KeyboardType.Email
-                        )
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
                     )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedTextField(
+                        value = favoriteClassTimeInput,
+                        onValueChange = { input ->
+                            favoriteClassTimeInput = input
+                        },
+                        label = { Text("Время любимой пары (HH:mm)") },
+                        placeholder = { Text("Например: 13:40") },
+                        trailingIcon = {
+                            IconButton(onClick = { openTimePicker() }) {
+                                Icon(Icons.Default.AccessTime, contentDescription = "Выбрать время")
+                            }
+                        },
+                        isError = isTimeError,
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    if (isTimeError) {
+                        Text(
+                            text = "Неверный формат времени. Должно быть HH:mm (например: 14:30)",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = {
-                    viewModel.saveProfile(
-                        fullName = fullName,
-                        resumeUrl = resumeUrl,
-                        position = position,
-                        email = email
-                    )
-                    onBackClick()
-                },
+                onClick = { saveAndExit() },
+                enabled = canSave,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
             ) {
                 Text("Сохранить изменения")
             }
+
+            Button(
+                onClick = {
+                    val intent = Intent(context, ClassReminderReceiver::class.java)
+                    context.sendBroadcast(intent)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                Text("Тест уведомления")
+            }
         }
     }
 
     if (showImageSourceDialog) {
         Dialog(onDismissRequest = { showImageSourceDialog = false }) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(0.8f),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        text = "Выберите источник",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-
-                    Text(
-                        text = "Камера",
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                openCamera()
-                                showImageSourceDialog = false
-                            }
-                            .padding(vertical = 12.dp)
-                    )
-
+            Surface(modifier = Modifier.fillMaxWidth(0.8f), shape = RoundedCornerShape(16.dp)) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("Выберите источник", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 16.dp))
+                    Text("Камера", modifier = Modifier.fillMaxWidth().clickable { openCamera(); showImageSourceDialog = false }.padding(vertical = 12.dp))
                     Divider()
-
-                    Text(
-                        text = "Галерея",
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                openGallery()
-                                showImageSourceDialog = false
-                            }
-                            .padding(vertical = 12.dp)
-                    )
+                    Text("Галерея", modifier = Modifier.fillMaxWidth().clickable { openGallery(); showImageSourceDialog = false }.padding(vertical = 12.dp))
                 }
             }
         }
@@ -348,21 +337,11 @@ fun EditProfileScreen(
 
     if (showPermissionDeniedDialog) {
         AlertDialog(
-            onDismissRequest = {
-                showPermissionDeniedDialog = false
-                onBackClick()
-            },
-            title = { Text("Доступ запрещен") },
-            text = { Text("Без разрешений невозможно выбрать фото для профиля") },
+            onDismissRequest = { showPermissionDeniedDialog = false },
+            title = { Text("Доступ запрещён") },
+            text = { Text("Без разрешений нельзя выбрать фото") },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        showPermissionDeniedDialog = false
-                        onBackClick()
-                    }
-                ) {
-                    Text("OK")
-                }
+                TextButton(onClick = { showPermissionDeniedDialog = false }) { Text("OK") }
             }
         )
     }
