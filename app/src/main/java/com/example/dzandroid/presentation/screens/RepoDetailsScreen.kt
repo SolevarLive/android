@@ -30,7 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
-import com.example.dzandroid.data.remote.result.ApiResult
+import com.example.dzandroid.core.ApiResult
 import com.example.dzandroid.presentation.RepoViewModel
 import com.example.dzandroid.presentation.components.LoadingState
 

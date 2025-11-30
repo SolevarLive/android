@@ -26,12 +26,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.dzandroid.data.models.Repository
-import com.example.dzandroid.di.FilterBadgeCache
+import com.example.dzandroid.core.FilterBadgeCache
 import com.example.dzandroid.navigation.Screen
-import com.example.dzandroid.presentation.ProfileViewModel
 import com.example.dzandroid.presentation.RepoViewModel
 import com.example.dzandroid.presentation.components.LoadingState
 import com.example.dzandroid.presentation.components.RepoListItem
+import com.example.dzandroid.profile.presentation.ProfileViewModel
+import com.example.dzandroid.profile.presentation.screens.ProfileScreen
 
 /**
  * Главный экран приложения с BottomNavigation

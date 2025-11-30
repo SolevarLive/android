@@ -6,11 +6,11 @@ import com.example.dzandroid.data.local.dao.FavoriteDao
 import com.example.dzandroid.data.local.datastore.SharedPrefsManager
 import com.example.dzandroid.data.local.entity.FavoriteRepository
 import com.example.dzandroid.data.models.Repository
-import com.example.dzandroid.data.remote.result.ApiResult
-import com.example.dzandroid.domain.GetReadmeUseCase
-import com.example.dzandroid.domain.GetRepositoryUseCase
-import com.example.dzandroid.domain.SearchRepositoriesUseCase
-import com.example.dzandroid.di.FilterBadgeCache
+import com.example.dzandroid.core.ApiResult
+import com.example.dzandroid.data.domain.GetReadmeUseCase
+import com.example.dzandroid.data.domain.GetRepositoryUseCase
+import com.example.dzandroid.data.domain.SearchRepositoriesUseCase
+import com.example.dzandroid.core.FilterBadgeCache
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
