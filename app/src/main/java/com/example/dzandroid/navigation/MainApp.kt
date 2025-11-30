@@ -11,12 +11,12 @@ import androidx.compose.runtime.setValue
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.dzandroid.di.FilterBadgeCache
-import com.example.dzandroid.presentation.ProfileViewModel
+import com.example.dzandroid.core.FilterBadgeCache
 import com.example.dzandroid.presentation.RepoViewModel
-import com.example.dzandroid.presentation.screens.EditProfileScreen
 import com.example.dzandroid.presentation.screens.MainScreen
-import com.example.dzandroid.presentation.screens.ProfileScreen
+import com.example.dzandroid.profile.presentation.ProfileViewModel
+import com.example.dzandroid.profile.presentation.screens.EditProfileScreen
+import com.example.dzandroid.profile.presentation.screens.ProfileScreen
 
 
 @Composable

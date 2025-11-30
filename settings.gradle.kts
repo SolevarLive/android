@@ -21,4 +21,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "DZandroid"
 include(":app")
- 
+include(":core")
+include(":data")
+include(":feature-profile")

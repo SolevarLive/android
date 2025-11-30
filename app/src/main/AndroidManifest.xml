@@ -23,7 +23,7 @@
         android:theme="@style/Theme.DZandroid">
 
         <receiver
-            android:name=".presentation.receivers.ClassReminderReceiver"
+            android:name=".profile.presentation.receivers.ClassReminderReceiver"
             android:enabled="true"
             android:exported="false" />
 
