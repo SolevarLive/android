@@ -9,5 +9,6 @@ data class Profile(
     val avatarUri: String = "",
     val resumeUrl: String = "",
     val position: String = "",
-    val email: String = ""
+    val email: String = "",
+    val favoriteClassTime: String = ""
 )

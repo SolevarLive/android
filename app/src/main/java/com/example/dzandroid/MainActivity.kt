@@ -24,7 +24,6 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 class MainActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -57,16 +56,14 @@ class MainActivity : ComponentActivity() {
         val saveProfileUseCase = SaveProfileUseCase(profileDataStore)
         val profileViewModel = ProfileViewModel(
             getProfileUseCase = getProfileUseCase,
-            saveProfileUseCase = saveProfileUseCase
+            saveProfileUseCase = saveProfileUseCase,
+            profileDataStore = profileDataStore
         )
 
         setContent {
             MaterialTheme {
-                Surface(
-                    color = MaterialTheme.colorScheme.background
-                ) {
+                Surface(color = MaterialTheme.colorScheme.background) {
                     val navController = rememberNavController()
-
                     MainApp(
                         navController = navController,
                         viewModel = viewModel,
